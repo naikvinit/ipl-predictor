@@ -1,7 +1,7 @@
 # pages/3_🗓️_Weekly_Winners.py
 import streamlit as st
 from utils.scoring import weekly_winners
-from utils import db
+from utils import db_pg as db
 
 st.set_page_config(page_title="Weekly Winners", page_icon="🗓️", layout="wide")
 

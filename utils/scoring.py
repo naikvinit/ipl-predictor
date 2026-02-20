@@ -1,12 +1,19 @@
 # utils/scoring.py
 from typing import Dict, List, Tuple
 import pandas as pd
-from utils import db
+from utils import db_pg as db
 from config import POINTS
 
 def _load_baseframes():
-    fixtures = pd.DataFrame(db.list_fixtures())  # cols: match_id, match_date, team_a, team_b, week, winner
-    users = pd.DataFrame(db.list_users())        # cols: email, name
+    engine = db.get_engine()
+    fixtures = pd.read_sql_query("""
+        SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
+        FROM fixtures f
+        LEFT JOIN results r ON r.match_id = f.match_id
+        ORDER BY f.match_date, f.match_id;
+    """, engine)
+
+    users = pd.read_sql_query("SELECT email, name FROM users;", engine)
     return fixtures, users
 
 def compute_match_scores() -> pd.DataFrame:
@@ -14,9 +21,8 @@ def compute_match_scores() -> pd.DataFrame:
     fixtures, users = _load_baseframes()
 
     # Predictions (match-level)
-    conn = db.get_conn()
-    pred = pd.read_sql_query("SELECT * FROM predictions_match", conn)
-    conn.close()
+    engine = db.get_engine()
+    pred = pd.read_sql_query("SELECT * FROM predictions_match", engine)
 
     if pred.empty:
         return pd.DataFrame()
@@ -39,9 +45,8 @@ def compute_match_scores() -> pd.DataFrame:
 
 def compute_meta_scores() -> pd.DataFrame:
     """Returns per-user meta (playoffs/finalists/champion) scores as columns."""
-    conn = db.get_conn()
-    meta = pd.read_sql_query("SELECT * FROM predictions_meta", conn)
-    conn.close()
+    engine = db.get_engine()
+    meta = pd.read_sql_query("SELECT * FROM predictions_meta", engine)
 
     if meta.empty:
         return pd.DataFrame(columns=["email", "playoff_points", "finalist_points", "champion_points", "meta_total"])

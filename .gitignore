@@ -1,0 +1,18 @@
+# Ignore database
+ipl.db
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Streamlit
+.streamlit/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+.venv/
+
+utils/__pycache__/
+*.pyc
