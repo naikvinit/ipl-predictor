@@ -4,7 +4,7 @@ import csv
 import json
 import os
 import streamlit as st
-from utils import db
+from utils import db_pg as db
 from config import ADMIN_CODE
 
 st.set_page_config(page_title="Admin", page_icon="🛠️", layout="wide")

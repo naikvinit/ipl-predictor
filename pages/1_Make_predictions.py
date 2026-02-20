@@ -2,7 +2,7 @@
 from datetime import datetime, timezone
 import json
 import streamlit as st
-from utils import db
+from utils import db_pg as db
 from config import cutoff_dt_utc
 
 st.set_page_config(page_title="Make Predictions", page_icon="🏏", layout="wide")
