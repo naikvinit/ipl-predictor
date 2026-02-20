@@ -216,7 +216,7 @@ def list_fixtures() -> List[Dict[str, Any]]:
         SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
         FROM fixtures f
         LEFT JOIN results r ON r.match_id = f.match_id
-        ORDER BY f.match_date NULLS LAST, f.match_id;
+        ORDER BY f.match_id NULLS LAST;
         """
     )
 
