@@ -1,19 +1,21 @@
 # utils/scoring.py
 from typing import Dict, List, Tuple
 import pandas as pd
-from utils import db_pg as db
+
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local
 from config import POINTS
 
 def _load_baseframes():
-    engine = db.get_engine()
-    fixtures = pd.read_sql_query("""
-        SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
-        FROM fixtures f
-        LEFT JOIN results r ON r.match_id = f.match_id
-        ORDER BY f.match_date, f.match_id;
-    """, engine)
+    with db.get_engine() as engine:
+        fixtures = pd.read_sql_query("""
+            SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
+            FROM fixtures f
+            LEFT JOIN results r ON r.match_id = f.match_id
+            ORDER BY f.match_date, f.match_id;
+        """, engine)
 
-    users = pd.read_sql_query("SELECT email, name FROM users;", engine)
+        users = pd.read_sql_query("SELECT email, name FROM users;", engine)
     return fixtures, users
 
 def compute_match_scores() -> pd.DataFrame:
@@ -21,8 +23,8 @@ def compute_match_scores() -> pd.DataFrame:
     fixtures, users = _load_baseframes()
 
     # Predictions (match-level)
-    engine = db.get_engine()
-    pred = pd.read_sql_query("SELECT * FROM predictions_match", engine)
+    with db.get_engine() as engine:
+        pred = pd.read_sql_query("SELECT * FROM predictions_match", engine)
 
     if pred.empty:
         return pd.DataFrame()
@@ -45,8 +47,8 @@ def compute_match_scores() -> pd.DataFrame:
 
 def compute_meta_scores() -> pd.DataFrame:
     """Returns per-user meta (playoffs/finalists/champion) scores as columns."""
-    engine = db.get_engine()
-    meta = pd.read_sql_query("SELECT * FROM predictions_meta", engine)
+    with db.get_engine() as engine:
+        meta = pd.read_sql_query("SELECT * FROM predictions_meta", engine)
 
     if meta.empty:
         return pd.DataFrame(columns=["email", "playoff_points", "finalist_points", "champion_points", "meta_total"])

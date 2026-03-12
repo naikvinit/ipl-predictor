@@ -7,11 +7,22 @@ from typing import List, Dict, Optional, Tuple
 
 DB_PATH = Path("ipl.db")
 
-def get_conn():
+
+def _connect(row_factory=None):
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
+    if row_factory is not None:
+        conn.row_factory = row_factory
     return conn
+
+
+def get_conn():
+    return _connect(sqlite3.Row)
+
+
+def get_engine():
+    """Return a raw SQLite connection for read_sql compatibility."""
+    return _connect()
 
 def _rows_to_dicts(rows):
     return [dict(r) for r in rows] if rows else []
