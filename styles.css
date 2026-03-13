@@ -1,0 +1,212 @@
+/* =============================================================
+   IPL DARK THEME CSS PACK
+   Designed for deep-royal navy backgrounds + Streamlit dark base
+   ============================================================= */
+
+/* GLOBAL ------------------------------------------------------ */
+html, body, [data-testid="stAppViewContainer"] {
+  background-color: #1E2A42 !important; /* matches config.toml */
+}
+
+.section-card,
+.match-card,
+.winner-card {
+  background: #273552 !important;        /* Panel background */
+  border: 1px solid #3A4A6A !important;  /* Soft border */
+  border-radius: 12px !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35) !important;
+}
+
+/* Muted text */
+.muted {
+  color: #C9D3EA !important;
+  font-size: .9rem;
+}
+
+/* HEADINGS ---------------------------------------------------- */
+h1, h2, h3 {
+  background: -webkit-linear-gradient(#AFC7F1, #88ABE0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* EXPANDERS --------------------------------------------------- */
+.streamlit-expanderHeader {
+  background: #273552 !important;
+  color: #AFC7F1 !important;
+  border-radius: 6px !important;
+  border: 1px solid #3A4A6A !important;
+}
+
+/* BUTTONS ----------------------------------------------------- */
+.stButton > button {
+  background-color: #88ABE0 !important;
+  color: #1A1A1A !important;
+  border: none !important;
+  border-radius: 6px !important;
+}
+.stButton > button:hover {
+  background-color: #AFC7F1 !important;
+  color: #1A1A1A !important;
+}
+
+/* RADIO + CHECKBOX ACCENTS ----------------------------------- */
+div[role="radiogroup"] label div[data-baseweb="radio"] svg,
+.stCheckbox svg {
+  color: #88ABE0 !important;
+}
+
+/* MATCH CARD -------------------------------------------------- */
+.match-card:hover {
+  transform: translateY(-1px);
+  transition: transform .05s ease-in;
+}
+.team-name {
+  color: #FFFFFF !important;
+}
+.match-vs {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #88ABE0 !important;
+}
+
+/* TROPHY CARDS ------------------------------------------------ */
+.winner-card {
+  background: #3A2E00 !important;        /* gold tone for dark theme */
+  border: 1px solid #5A4300 !important;
+}
+
+/* DATAFRAME OVERRIDES (critical fix) -------------------------- */
+/* Wrap st.dataframe with <div class="df-light"> ... </div> */
+
+.df-light [data-testid="stDataFrame"] * {
+  --df-header-bg: #37476A;   /* dark steel blue header */
+  --df-header-fg: #FFFFFF;   /* white text */
+  --df-row-odd:   #2B3856;   /* zebra rows */
+  --df-row-even:  #24304A;
+  --df-border:    #46536F;
+}
+
+/* Header cells */
+.df-light [data-testid="stDataFrame"] thead tr th,
+.df-light [data-testid="stDataFrame"] thead tr td {
+  background-color: var(--df-header-bg) !important;
+  color: var(--df-header-fg) !important;
+  border-bottom: 1px solid var(--df-border) !important;
+}
+
+/* Body rows */
+.df-light [data-testid="stDataFrame"] tbody tr:nth-child(odd) td {
+  background-color: var(--df-row-odd) !important;
+  color: #FFFFFF !important;
+}
+.df-light [data-testid="stDataFrame"] tbody tr:nth-child(even) td {
+  background-color: var(--df-row-even) !important;
+  color: #FFFFFF !important;
+}
+
+/* Borders */
+.df-light [data-testid="stDataFrame"] div[role="columnheader"],
+.df-light [data-testid="stDataFrame"] div[role="gridcell"] {
+  border-color: var(--df-border) !important;
+}
+
+/* Avoid any blending glitches */
+.df-light [data-testid="stDataFrame"] thead {
+  filter: none !important;
+  mix-blend-mode: normal !important;
+}
+
+/* === Subtle Glow Behind Match Cards === */
+.match-card {
+  position: relative;
+  z-index: 1;
+}
+
+.match-card::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  right: -6px;
+  bottom: -6px;
+  border-radius: 14px;
+  background: radial-gradient(
+    circle,
+    rgba(136, 171, 224, 0.35) 0%,    /* soft royal glow */
+    rgba(136, 171, 224, 0.00) 70%
+  );
+  filter: blur(12px);
+  z-index: -1;
+  transition: opacity 0.25s ease-in-out;
+  opacity: 0.55;                     /* balanced subtle glow */
+}
+
+/* Slight intensification on hover */
+.match-card:hover::before {
+  opacity: 0.75;
+  filter: blur(14px);
+}
+
+/* ============================================================
+   RESTORE ORIGINAL EMOJI COLORS (stop dark theme tinting icons)
+   ============================================================ */
+
+/* All emojis inside headings, labels, paragraphs */
+h1, h2, h3, h4, h5, h6,
+p, span, div, strong, em, li {
+  unicode-bidi: isolate;
+}
+
+/* Don’t apply page text color to emojis */
+.emoji-fix, .emoji-fix * {
+  color: initial !important;
+}
+
+/* Apply automatically to any emoji */
+span, div, p, h1, h2, h3, h4, h5, h6 {
+  -webkit-text-fill-color: unset !important;
+}
+
+
+/* === Optional: Team Themed Glow === */
+
+.team-mi.match-card::before {
+  background: radial-gradient(circle, rgba(0, 102, 204, 0.40), rgba(0, 102, 204, 0) 70%);
+}
+
+.team-csk.match-card::before {
+  background: radial-gradient(circle, rgba(255, 210, 0, 0.35), rgba(255, 210, 0, 0) 70%);
+}
+
+.team-rcb.match-card::before {
+  background: radial-gradient(circle, rgba(255, 0, 0, 0.35), rgba(255, 0, 0, 0) 70%);
+}
+
+.team-kkr.match-card::before {
+  background: radial-gradient(circle, rgba(98, 0, 153, 0.35), rgba(98, 0, 153, 0) 70%);
+}
+
+.team-rr.match-card::before {
+  background: radial-gradient(circle, rgba(255, 105, 180, 0.35), rgba(255, 105, 180, 0) 70%);
+}
+
+.team-srh.match-card::before {
+  background: radial-gradient(circle, rgba(255, 102, 0, 0.35), rgba(255, 102, 0, 0) 70%);
+}
+
+.team-gt.match-card::before {
+  background: radial-gradient(circle, rgba(0, 38, 66, 0.35), rgba(0, 38, 66, 0) 70%);
+}
+
+.team-lsg.match-card::before {
+  background: radial-gradient(circle, rgba(0, 153, 204, 0.35), rgba(0, 153, 204, 0) 70%);
+}
+
+.team-dc.match-card::before {
+  background: radial-gradient(circle, rgba(0, 102, 204, 0.35), rgba(0, 102, 204, 0) 70%);
+}
+
+.team-pbks.match-card::before {
+  background: radial-gradient(circle, rgba(204, 0, 0, 0.35), rgba(204, 0, 0, 0) 70%);
+}
