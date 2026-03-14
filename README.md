@@ -7,8 +7,8 @@ Streamlit app for running an IPL prediction challenge: upload fixtures, collect 
 - Secure sign-in via name + email, stored in the database
 - Match-by-match predictions with season-wide meta picks (playoffs, finalists, champion)
 - Admin tools for uploading fixtures/results data
-- Automated scoring logic and weekly winner summaries
-- Optional Supabase/Postgres backend (via `utils/db_pg.py`) or lightweight SQLite (default `utils/db.py`)
+- Automated scoring logic, read-only public schedule page, and weekly winner summaries
+- Supabase/Postgres backend by default (via `utils/db_pg.py`) with an optional lightweight SQLite fallback (`utils/db.py`)
 
 ## Repository Layout
 
@@ -45,7 +45,7 @@ assets/logos/          # Team logos referenced by utils/ui.py
  streamlit run app.py
 ```
 
-By default the app uses SQLite (`utils/db.py`) and creates `ipl.db` in the project root. This keeps each deployment isolated—delete the file if you need a fresh database.
+By default the app uses Supabase/Postgres via `utils/db_pg.py`. Create a database in Supabase (or any hosted Postgres), then add your connection string as `DB_URL` in `.streamlit/secrets.toml` or the Streamlit Cloud secrets UI. If you prefer a file-based local run, swap the imports back to `utils/db.py` (SQLite) temporarily.
 
 ### Add an authorized roster
 
@@ -55,20 +55,22 @@ Before anyone can sign in, populate `data/authorized_users.csv` with the officia
 
 | Option | How | When to use |
 | ------ | --- | ----------- |
-| SQLite (default) | `from utils import db as db` | Simple self-contained deployment, Streamlit Cloud, small leagues |
-| Supabase/Postgres | change imports to `db_pg`, configure credentials in `utils/db_pg.py` or Streamlit secrets | Need multi-user scale, shared hosted DB |
+| Supabase/Postgres (default) | `from utils import db_pg as db`, set `DB_URL` secret, optional `db.init_db()` to bootstrap tables | Hosted deployments, team access, persistent cloud storage |
+| SQLite (legacy) | switch imports back to `from utils import db as db` | Quick local experiments without a Postgres instance |
 
-1. For SQLite, no extra steps—`db.init_db()` runs automatically.
-2. For Supabase/Postgres:
-   - Copy `utils/db_pg.py` to your liking, set connection URL via environment variable or `.streamlit/secrets.toml`.
-   - Update every file currently doing `from utils import db as db` to instead import `db_pg`.
-   - Make sure required tables exist (use SQL in `utils/db_pg.py` or run migrations manually).
+For Supabase/Postgres:
+1. Create a new Supabase project (or any Postgres database) and grab the connection string.
+2. Add `DB_URL="postgresql://user:pass@host:5432/db"` to `.streamlit/secrets.toml` locally and to Streamlit Cloud secrets in production.
+3. Ensure the tables exist (run `db.init_db()` once or execute the SQL in `utils/db_pg.py`).
+
+For SQLite fallback, simply swap the imports and the app will recreate `ipl.db` automatically (make sure the file is writable in your environment).
 
 ## Populating Data
 
-- Fixtures: edit `data/fixtures_template.csv`, then use the Admin page (`pages/4_Admin.py`) to upload.
+- Fixtures: edit `data/fixtures_template.csv` (columns: match_id, match_date/date, team_a, team_b, week, time_ist, venue, optional day), then use the Admin page (`pages/5_Admin.py`) to upload.
 - Results: update `data/results_template.csv` and upload once real outcomes exist.
 - Authorized players: maintain `data/authorized_users.csv` via the Admin → **Manage Authorized Players** section (upload a CSV or edit inline).
+- Public schedule: `pages/4_Schedule.py` renders the fixture list for everyone (no login required).
 - Team logos: place PNG files under `assets/logos/` using the names in `TEAM_LOGOS` inside `utils/ui.py`.
 
 ## Configuration

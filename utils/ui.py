@@ -9,6 +9,7 @@ TEAM_LOGOS: Dict[str, str] = {
     "Chennai Super Kings": "assets/logos/csk.png",
     "Mumbai Indians": "assets/logos/mi.png",
     "Royal Challengers Bangalore": "assets/logos/rcb.png",
+    "Royal Challengers Bengaluru": "assets/logos/rcb.png",  # new branding
     "Kolkata Knight Riders": "assets/logos/kkr.png",
     "Rajasthan Royals": "assets/logos/rr.png",
     "Sunrisers Hyderabad": "assets/logos/srh.png",
@@ -38,7 +39,7 @@ def format_match_dt(dt_str: str) -> str:
 PLACEHOLDER_LABEL = "- Select winner -"
 
 
-def match_card(fixture: dict, existing_pick: Optional[str]) -> Optional[str]:
+def match_card(fixture: dict, existing_pick: Optional[str], *, disabled: bool = False) -> Optional[str]:
     """Render a Cricbuzz-like match card and return the selected team."""
     t1, t2 = fixture["team_a"], fixture["team_b"]
     logo1, logo2 = _logo_or_fallback(t1), _logo_or_fallback(t2)
@@ -68,6 +69,7 @@ def match_card(fixture: dict, existing_pick: Optional[str]) -> Optional[str]:
         index=options.index(pick_default),
         horizontal=True,
         key=f"pred_{fixture['match_id']}",
+        disabled=disabled,
     )
 
     st.markdown("</div>", unsafe_allow_html=True)

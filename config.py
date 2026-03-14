@@ -1,5 +1,6 @@
 # config.py
 from datetime import datetime, timezone
+from typing import Optional
 
 # --- IMPORTANT: EDIT THESE FOR YOUR SEASON ---
 # Use ISO 8601 with timezone. Example shown is IST (UTC+05:30).
@@ -17,11 +18,23 @@ POINTS = {
 # Optional: Name your competition
 APP_TITLE = "IPL Prediction Challenge"
 
-def cutoff_dt_utc() -> datetime:
-    """Return the cutoff datetime in UTC."""
-    # We parse as naive then assume it's a valid ISO with offset; Python will parse it as aware.
-    dt = datetime.fromisoformat(CUTOFF_ISO)
+DEFAULT_CUTOFF_KEY = "cutoff_iso"
+
+
+def _parse_cutoff_iso(value: str) -> datetime:
+    dt = datetime.fromisoformat(value)
     if dt.tzinfo is None:
-        # If no tz, assume UTC
         return dt.replace(tzinfo=timezone.utc)
     return dt.astimezone(timezone.utc)
+
+
+def cutoff_dt_utc(db_client=None) -> datetime:
+    """Return the cutoff datetime in UTC, preferring the DB override if available."""
+    if db_client is not None:
+        try:
+            dynamic_value = db_client.get_actual_meta(DEFAULT_CUTOFF_KEY)
+            if isinstance(dynamic_value, str) and dynamic_value.strip():
+                return _parse_cutoff_iso(dynamic_value.strip())
+        except Exception:
+            pass
+    return _parse_cutoff_iso(CUTOFF_ISO)

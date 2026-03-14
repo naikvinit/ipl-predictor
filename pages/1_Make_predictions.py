@@ -2,8 +2,8 @@
 import json
 from datetime import datetime, timezone
 import streamlit as st
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local
 
 from utils.ui import apply_theme, match_card
 from config import cutoff_dt_utc
@@ -13,7 +13,7 @@ apply_theme()
 
 def locked():
     now_utc = datetime.now(timezone.utc)
-    return now_utc >= cutoff_dt_utc()
+    return now_utc >= cutoff_dt_utc(db_client=db)
 
 def main():
     st.title("🏏 Make Predictions")
@@ -22,9 +22,9 @@ def main():
         st.warning("Please sign in on the Home page first.")
         st.stop()
 
-    if locked():
-        st.error("Predictions are locked. The cutoff has passed.")
-        st.stop()
+    is_locked = locked()
+    if is_locked:
+        st.info("Predictions are locked. Showing your submitted picks for reference.")
 
     fixtures = db.list_fixtures()
     if not fixtures:
@@ -51,12 +51,28 @@ def main():
         st.markdown("### 🧠 Season Predictions")
         c1, c2, c3 = st.columns([1.2, 1.2, 1])
         with c1:
-            playoffs = st.multiselect("Pick 4 playoff teams", options=teams, default=existing_playoffs, max_selections=4)
+            playoffs = st.multiselect(
+                "Pick 4 playoff teams",
+                options=teams,
+                default=existing_playoffs,
+                max_selections=4,
+                disabled=is_locked,
+            )
         with c2:
-            finalists = st.multiselect("Pick 2 finalists", options=teams, default=existing_finalists, max_selections=2)
+            finalists = st.multiselect(
+                "Pick 2 finalists",
+                options=teams,
+                default=existing_finalists,
+                max_selections=2,
+                disabled=is_locked,
+            )
         with c3:
-            champion = st.selectbox("Pick the champion", options=[""] + teams,
-                                    index=([""] + teams).index(existing_champion) if existing_champion in (teams or []) else 0)
+            champion = st.selectbox(
+                "Pick the champion",
+                options=[""] + teams,
+                index=([""] + teams).index(existing_champion) if existing_champion in (teams or []) else 0,
+                disabled=is_locked,
+            )
 
     st.divider()
     st.markdown("### 🗓️ Match-by-Match Winners")
@@ -71,7 +87,15 @@ def main():
             # Order by match_id if present, otherwise by date
             week_fixtures = sorted(week_fixtures, key=lambda x: (x.get("match_id", 0), str(x.get("match_date", ""))))
             for f in week_fixtures:
-                pick = match_card(fixture=f, existing_pick=match_picks.get(str(f["match_id"]), None))
+                pick = match_card(
+                    fixture=f,
+                    existing_pick=match_picks.get(str(f["match_id"]), None),
+                    disabled=is_locked,
+                )
+
+    if is_locked:
+        st.warning("Edits are disabled because the cutoff has passed.")
+        return
 
     if st.button("💾 Save Predictions", type="primary", use_container_width=True):
         if champion == "":

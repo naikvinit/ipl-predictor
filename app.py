@@ -1,11 +1,11 @@
 # app.py
 import streamlit as st
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local dev
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local dev
 from utils.ui import apply_theme
 from utils.auth import load_authorized_users
 
-from config import APP_TITLE
+from config import APP_TITLE, cutoff_dt_utc
 
 st.set_page_config(page_title=APP_TITLE, page_icon="🏏", layout="wide")
 apply_theme()
@@ -27,7 +27,7 @@ def sign_in(authorized_users):
             roster_name = authorized_users.get(email)
 
             if existing:
-                canonical_name = name or existing["name"] or roster_name or "Player"
+                canonical_name = existing["name"] or roster_name or "Player"
             else:
                 if roster_name is None:
                     st.error("This email is not on the authorized roster. Contact the admin to be added.")
@@ -67,11 +67,27 @@ def main():
         pass
 
     authorized_users = load_authorized_users()
+    cutoff_value = cutoff_dt_utc(db_client=db)
     hero_header()
     st.markdown('<div style="margin-top:1.5rem"></div>', unsafe_allow_html=True)
 
     if "email" not in st.session_state:
         sign_in(authorized_users)
+        st.markdown(
+            """
+            <div class="section-card" style="margin-top:1rem;">
+              <h3 style="margin-top:0;">How it works</h3>
+              <ol>
+                <li>Contact the league admin to get your email added to the roster.</li>
+                <li>Sign in with that email to unlock predictions and leaderboards.</li>
+                <li>Submit weekly winners before the cutoff and track your progress.</li>
+              </ol>
+              <p class="muted">Need access? Contact Vinit Naik to join.</p>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        st.info("Only pre-approved participants can sign in. Reach out to the admin if you need access.")
         return
 
     current = db.get_user(st.session_state["email"])
@@ -80,7 +96,10 @@ def main():
 
     st.markdown("" \
     "")
-    st.success(f"Signed in as {st.session_state['name']} ({st.session_state['email']})")
+    st.success(
+        f"Signed in as {st.session_state['name']} ({st.session_state['email']}). "
+        f"Predictions lock at {cutoff_value.strftime('%Y-%m-%d %H:%M %Z')}"
+    )
     st.markdown("" \
     "")
     st.markdown(
@@ -93,6 +112,7 @@ def main():
             <li>    See <b>🗓️ Weekly Winners</b> to celebrate weekly champs.</li>
             <li>    Admins: use <b>🛠️ Admin</b> to upload fixtures/results and set season outcomes.</li>
           </ul>
+          <p class="muted" style="margin-top:1rem;">Invite friends by sharing this app and asking the admin to add their email to the roster.</p>
         </div>
         """, unsafe_allow_html=True
     )

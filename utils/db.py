@@ -88,6 +88,25 @@ def init_db():
     """)
     conn.commit()
     conn.close()
+    _ensure_fixture_columns()
+
+
+def _ensure_fixture_columns():
+    """Add optional day/time/venue columns if the DB was created before they existed."""
+    conn = get_conn()
+    cur = conn.cursor()
+    for column in [
+        ("day", "TEXT"),
+        ("time_ist", "TEXT"),
+        ("venue", "TEXT"),
+    ]:
+        try:
+            cur.execute(f"ALTER TABLE fixtures ADD COLUMN {column[0]} {column[1]};")
+        except sqlite3.OperationalError as exc:
+            if "duplicate column name" not in str(exc):
+                raise
+    conn.commit()
+    conn.close()
 
 def upsert_user(email: str, name: str):
     conn = get_conn()
@@ -122,13 +141,23 @@ def list_teams() -> List[str]:
 
 def insert_fixtures(rows: List[Dict]):
     """rows: list of dicts with keys: match_id, match_date, team_a, team_b, week"""
+    _ensure_fixture_columns()
     conn = get_conn()
     cur = conn.cursor()
     for r in rows:
         cur.execute("""
-        INSERT OR REPLACE INTO fixtures (match_id, match_date, team_a, team_b, week)
-        VALUES (?, ?, ?, ?, ?);
-        """, (str(r["match_id"]), r["match_date"], r["team_a"], r["team_b"], int(r["week"])))
+        INSERT OR REPLACE INTO fixtures (match_id, match_date, team_a, team_b, week, day, time_ist, venue)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+        """, (
+            str(r["match_id"]),
+            r.get("match_date"),
+            r.get("team_a"),
+            r.get("team_b"),
+            int(r.get("week")) if r.get("week") is not None else None,
+            r.get("day"),
+            r.get("time_ist"),
+            r.get("venue"),
+        ))
     conn.commit()
     conn.close()
 
@@ -144,6 +173,7 @@ def insert_results(rows: List[Dict]):
     conn.close()
 
 def list_fixtures() -> List[sqlite3.Row]:
+    _ensure_fixture_columns()
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("""

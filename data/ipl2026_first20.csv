@@ -1,0 +1,21 @@
+match_id,team_a,team_b,match_date,day,time_ist,venue,week
+1,Royal Challengers Bengaluru,Sunrisers Hyderabad,28-Mar-26,Saturday,7:30 PM,Bengaluru,1
+2,Mumbai Indians,Kolkata Knight Riders,29-Mar-26,Sunday,7:30 PM,Mumbai,1
+3,Rajasthan Royals,Chennai Super Kings,30-Mar-26,Monday,7:30 PM,Guwahati,1
+4,Punjab Kings,Gujarat Titans,31-Mar-26,Tuesday,7:30 PM,New Chandigarh,1
+5,Lucknow Super Giants,Delhi Capitals,01-Apr-26,Wednesday,7:30 PM,Lucknow,1
+6,Kolkata Knight Riders,Sunrisers Hyderabad,02-Apr-26,Thursday,7:30 PM,Kolkata,1
+7,Chennai Super Kings,Punjab Kings,03-Apr-26,Friday,7:30 PM,Chennai,1
+8,Delhi Capitals,Mumbai Indians,04-Apr-26,Saturday,3:30 PM,Delhi,1
+9,Gujarat Titans,Rajasthan Royals,04-Apr-26,Saturday,7:30 PM,Ahmedabad,1
+10,Sunrisers Hyderabad,Lucknow Super Giants,05-Apr-26,Sunday,3:30 PM,Hyderabad,1
+11,Royal Challengers Bengaluru,Chennai Super Kings,05-Apr-26,Sunday,7:30 PM,Bengaluru,1
+12,Kolkata Knight Riders,Punjab Kings,06-Apr-26,Monday,7:30 PM,Kolkata,2
+13,Rajasthan Royals,Mumbai Indians,07-Apr-26,Tuesday,7:30 PM,Guwahati,2
+14,Delhi Capitals,Gujarat Titans,08-Apr-26,Wednesday,7:30 PM,Delhi,2
+15,Kolkata Knight Riders,Lucknow Super Giants,09-Apr-26,Thursday,7:30 PM,Kolkata,2
+16,Rajasthan Royals,Royal Challengers Bengaluru,10-Apr-26,Friday,7:30 PM,Guwahati,2
+17,Punjab Kings,Sunrisers Hyderabad,11-Apr-26,Saturday,3:30 PM,New Chandigarh,2
+18,Chennai Super Kings,Delhi Capitals,11-Apr-26,Saturday,7:30 PM,Chennai,2
+19,Lucknow Super Giants,Gujarat Titans,12-Apr-26,Sunday,3:30 PM,Lucknow,2
+20,Mumbai Indians,Royal Challengers Bengaluru,12-Apr-26,Sunday,7:30 PM,Mumbai,2

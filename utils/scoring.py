@@ -1,13 +1,29 @@
 # utils/scoring.py
+from contextlib import contextmanager
 from typing import Dict, List, Tuple
 import pandas as pd
 
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local
 from config import POINTS
 
+
+@contextmanager
+def _read_handle():
+    """Yield a DB handle that works for both SQLAlchemy engines and sqlite3 connections."""
+    handle = db.get_engine()
+    try:
+        yield handle
+    finally:
+        # sqlite3 connections expose .cursor; SQLAlchemy engines do not.
+        if hasattr(handle, "cursor"):
+            try:
+                handle.close()
+            except Exception:
+                pass
+
 def _load_baseframes():
-    with db.get_engine() as engine:
+    with _read_handle() as engine:
         fixtures = pd.read_sql_query("""
             SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
             FROM fixtures f
@@ -23,7 +39,7 @@ def compute_match_scores() -> pd.DataFrame:
     fixtures, users = _load_baseframes()
 
     # Predictions (match-level)
-    with db.get_engine() as engine:
+    with _read_handle() as engine:
         pred = pd.read_sql_query("SELECT * FROM predictions_match", engine)
 
     if pred.empty:
@@ -47,7 +63,7 @@ def compute_match_scores() -> pd.DataFrame:
 
 def compute_meta_scores() -> pd.DataFrame:
     """Returns per-user meta (playoffs/finalists/champion) scores as columns."""
-    with db.get_engine() as engine:
+    with _read_handle() as engine:
         meta = pd.read_sql_query("SELECT * FROM predictions_meta", engine)
 
     if meta.empty:

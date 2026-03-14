@@ -83,6 +83,13 @@ def _executemany(query: str, rows: List[Dict[str, Any]]) -> None:
     with eng.begin() as conn:
         conn.execute(text(query), rows)
 
+def _ensure_fixture_columns() -> None:
+    """Add optional columns to fixtures table if an older schema is in use."""
+    eng = get_engine()
+    with eng.begin() as conn:
+        conn.execute(text("ALTER TABLE fixtures ADD COLUMN IF NOT EXISTS day TEXT;"))
+        conn.execute(text("ALTER TABLE fixtures ADD COLUMN IF NOT EXISTS time_ist TEXT;"))
+        conn.execute(text("ALTER TABLE fixtures ADD COLUMN IF NOT EXISTS venue TEXT;"))
 
 # ----------------------------
 # Schema init (optional)
@@ -105,6 +112,9 @@ def init_db() -> None:
         match_date TEXT,   -- store ISO datetime string
         team_a TEXT,
         team_b TEXT,
+        day TEXT,
+        time_ist TEXT,
+        venue TEXT,
         week INTEGER
     );
 
@@ -138,6 +148,8 @@ def init_db() -> None:
         for statement in [s.strip() for s in ddl.split(";") if s.strip()]:
             conn.execute(text(statement + ";"))
 
+    _ensure_fixture_columns()
+
 
 # ----------------------------
 # Users
@@ -161,7 +173,6 @@ def get_user(email: str) -> Optional[Dict[str, Any]]:
         {"email": email.strip().lower()},
     )
 
-
 def list_users() -> List[Dict[str, Any]]:
     return _fetchall("SELECT email, name, created_at FROM users ORDER BY name COLLATE \"C\";")
     # Note: COLLATE "C" ensures a deterministic order; adjust if you prefer ICU collations.
@@ -173,21 +184,40 @@ def list_users() -> List[Dict[str, Any]]:
 
 def insert_fixtures(rows: List[Dict[str, Any]]) -> None:
     """
-    rows: list of dicts with keys match_id, match_date, team_a, team_b, week
+    rows: list of dicts with keys match_id, match_date, team_a, team_b, week, day?, time_ist?, venue?
     """
+    _ensure_fixture_columns()
+    normalized: List[Dict[str, Any]] = []
+    for r in rows:
+        normalized.append(
+            {
+                "match_id": r.get("match_id"),
+                "match_date": r.get("match_date"),
+                "team_a": r.get("team_a"),
+                "team_b": r.get("team_b"),
+                "week": r.get("week"),
+                "day": r.get("day"),
+                "time_ist": r.get("time_ist"),
+                "venue": r.get("venue"),
+            }
+        )
+
     # Use UPSERT to allow re-imports/updates
     _executemany(
         """
-        INSERT INTO fixtures (match_id, match_date, team_a, team_b, week)
-        VALUES (:match_id, :match_date, :team_a, :team_b, :week)
+        INSERT INTO fixtures (match_id, match_date, team_a, team_b, week, day, time_ist, venue)
+        VALUES (:match_id, :match_date, :team_a, :team_b, :week, :day, :time_ist, :venue)
         ON CONFLICT (match_id)
         DO UPDATE SET
             match_date = EXCLUDED.match_date,
             team_a     = EXCLUDED.team_a,
             team_b     = EXCLUDED.team_b,
-            week       = EXCLUDED.week;
+            week       = EXCLUDED.week,
+            day        = EXCLUDED.day,
+            time_ist   = EXCLUDED.time_ist,
+            venue      = EXCLUDED.venue;
         """,
-        rows,
+        normalized,
     )
 
 
@@ -209,14 +239,17 @@ def insert_results(rows: List[Dict[str, Any]]) -> None:
 def list_fixtures() -> List[Dict[str, Any]]:
     """
     Return fixtures joined with results (winner), ordered by match_date then match_id.
-    Columns: match_id, match_date, team_a, team_b, week, winner
+    Columns: match_id, match_date, team_a, team_b, week, day, time_ist, venue, winner
     """
+    _ensure_fixture_columns()
     return _fetchall(
         """
-        SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week, r.winner
+         SELECT f.match_id, f.match_date, f.team_a, f.team_b, f.week,
+             f.day, f.time_ist, f.venue,
+             r.winner
         FROM fixtures f
         LEFT JOIN results r ON r.match_id = f.match_id
-        ORDER BY f.match_id NULLS LAST;
+         ORDER BY f.match_date NULLS LAST, f.match_id NULLS LAST;
         """
     )
 
