@@ -155,6 +155,21 @@ def fixtures_ui():
         if "match_id" in df.columns:
             df["match_id"] = pd.to_numeric(df["match_id"], errors="coerce")
         df = df.sort_values(["match_id", "match_date"], ascending=[True, True], na_position="last")
+        display_cols = [
+            "match_id",
+            "week",
+            "match_date",
+            "day",
+            "time_ist",
+            "team_a",
+            "team_b",
+            "venue",
+            "winner",
+        ]
+        ordered_cols = [c for c in display_cols if c in df.columns]
+        remainder = [c for c in df.columns if c not in ordered_cols]
+        if ordered_cols:
+            df = df[ordered_cols + remainder]
         st.markdown("#### Current Fixtures")
         st.markdown('<div class="df-light">', unsafe_allow_html=True)
         st.dataframe(df, use_container_width=True, hide_index=True)
@@ -283,6 +298,31 @@ def roster_ui():
             except ValueError as exc:
                 st.error(f"Cannot save roster: {exc}")
 
+def backup_ui():
+    with st.expander("💾 Database Backup", expanded=False):
+        db_path = Path(getattr(db, "DB_PATH", "")) if getattr(db, "DB_PATH", None) else None
+        if not db_path:
+            st.info("You're using Postgres/Supabase, so manage backups with your database provider.")
+            return
+        if not db_path.exists():
+            st.warning("No SQLite database file found yet. Save some data first, then refresh this page.")
+            return
+
+        try:
+            payload = db_path.read_bytes()
+        except Exception as exc:
+            st.error(f"Unable to read {db_path.name}: {exc}")
+            return
+
+        st.download_button(
+            "Download SQLite backup",
+            data=payload,
+            file_name="ipl.db",
+            mime="application/octet-stream",
+            help="Restore by replacing the ipl.db file in your Streamlit workspace before redeploying."
+        )
+        st.caption("Keep the downloaded file safe; it contains all users, fixtures, predictions, and results.")
+
 def danger_zone_ui():
     with st.expander("🧨 Danger Zone", expanded=False):
         st.caption("Delete all data (use with caution).")
@@ -292,16 +332,30 @@ def danger_zone_ui():
                 st.error("Please type 'RESET' exactly to confirm.")
             else:
                 try:
-                    # Hard wipes (order matters due to FKs)
-                    from sqlalchemy import text
+                    statements = [
+                        "DELETE FROM predictions_match;",
+                        "DELETE FROM predictions_meta;",
+                        "DELETE FROM results;",
+                        "DELETE FROM fixtures;",
+                        "DELETE FROM users;",
+                        "DELETE FROM meta_actuals;",
+                    ]
                     engine = db.get_engine()
-                    with engine.begin() as conn:
-                        conn.execute(text("DELETE FROM predictions_match;"))
-                        conn.execute(text("DELETE FROM predictions_meta;"))
-                        conn.execute(text("DELETE FROM results;"))
-                        conn.execute(text("DELETE FROM fixtures;"))
-                        conn.execute(text("DELETE FROM users;"))
-                        conn.execute(text("DELETE FROM meta_actuals;"))
+                    if hasattr(engine, "begin"):
+                        from sqlalchemy import text
+
+                        with engine.begin() as conn:
+                            for stmt in statements:
+                                conn.execute(text(stmt))
+                    else:
+                        conn = engine
+                        try:
+                            cur = conn.cursor()
+                            for stmt in statements:
+                                cur.execute(stmt)
+                            conn.commit()
+                        finally:
+                            conn.close()
                     st.success("Database wiped. Reload the page.")
                 except Exception as e:
                     st.error(f"Reset failed: {e}")
@@ -316,6 +370,7 @@ def main():
     actuals_ui()
     deadline_ui()
     roster_ui()
+    backup_ui()
     danger_zone_ui()
 
 if __name__ == "__main__":

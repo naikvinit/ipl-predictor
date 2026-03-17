@@ -235,13 +235,13 @@ def save_meta_predictions(email: str, playoff_teams: List[str], finalists: List[
     conn.commit()
     conn.close()
 
-def get_meta_predictions(email: str) -> Optional[sqlite3.Row]:
+def get_meta_predictions(email: str) -> Optional[Dict]:
     conn = get_conn()
     cur = conn.cursor()
     cur.execute("SELECT * FROM predictions_meta WHERE email=?", (email.strip().lower(),))
     row = cur.fetchone()
     conn.close()
-    return row
+    return dict(row) if row else None
 
 def set_actual_meta(key: str, value):
     conn = get_conn()

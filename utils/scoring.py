@@ -32,6 +32,11 @@ def _load_baseframes():
         """, engine)
 
         users = pd.read_sql_query("SELECT email, name FROM users;", engine)
+    if not fixtures.empty:
+        fixtures = fixtures.reset_index(drop=True)
+        fixtures["fixture_order"] = fixtures.index
+    else:
+        fixtures["fixture_order"] = pd.Series(dtype=int)
     return fixtures, users
 
 def compute_match_scores() -> pd.DataFrame:
@@ -46,7 +51,10 @@ def compute_match_scores() -> pd.DataFrame:
         return pd.DataFrame()
 
     # Join predicted with actual results
-    df = pred.merge(fixtures[["match_id", "week", "winner"]], on="match_id", how="left")
+    merge_cols = ["match_id", "week", "winner"]
+    if "fixture_order" in fixtures.columns:
+        merge_cols.append("fixture_order")
+    df = pred.merge(fixtures[merge_cols], on="match_id", how="left")
 
     def score_row(r):
         if pd.isna(r["winner"]):
@@ -110,11 +118,14 @@ def overall_leaderboard() -> pd.DataFrame:
         match_agg = match_scores.groupby("email", as_index=False)["match_points"].sum()
 
     # Merge with meta
-    lb = match_agg.merge(meta_scores, on="email", how="outer").fillna(0)
-
-    # Add user names
-    fixtures, users = _load_baseframes()
-    lb = lb.merge(users[["email", "name"]], on="email", how="left")
+    if match_agg.empty and meta_scores.empty:
+        fixtures, users = _load_baseframes()
+        lb = users[["email", "name"]].copy()
+        lb[["match_points", "playoff_points", "finalist_points", "champion_points", "meta_total"]] = 0
+    else:
+        lb = match_agg.merge(meta_scores, on="email", how="outer").fillna(0)
+        fixtures, users = _load_baseframes()
+        lb = lb.merge(users[["email", "name"]], on="email", how="left")
 
     # Total
     point_cols = ["match_points", "meta_total"]
@@ -132,12 +143,12 @@ def overall_leaderboard() -> pd.DataFrame:
     # Add rank with ties
     lb["rank"] = lb["total_points"].rank(method="min", ascending=False).astype(int)
     # Order columns
-    cols = ["rank", "name", "email", "match_points", "playoff_points", "finalist_points", "champion_points", "total_points"]
+    cols = ["rank", "name", "match_points", "playoff_points", "finalist_points", "champion_points", "total_points"]
     lb = lb[cols]
     return lb
 
 def weekly_winners() -> Tuple[pd.DataFrame, Dict[int, pd.DataFrame]]:
-    """Returns (weekly_totals, winners_by_week)."""
+    """Returns (weekly_totals, winners_by_week) with streak-based tie breaker."""
     match_scores = compute_match_scores()
     if match_scores.empty:
         return pd.DataFrame(), {}
@@ -145,12 +156,33 @@ def weekly_winners() -> Tuple[pd.DataFrame, Dict[int, pd.DataFrame]]:
     # Per-week totals
     weekly = match_scores.groupby(["email", "name", "week"], as_index=False)["match_points"].sum()
 
+    # Compute longest streak of correct picks per user/week
+    streak_data = []
+    if "fixture_order" not in match_scores.columns:
+        match_scores["fixture_order"] = 0
+    ordered = match_scores.sort_values(["email", "week", "fixture_order"], na_position="last")
+    for (email, week), sub in ordered.groupby(["email", "week"]):
+        current = best = 0
+        for _, row in sub.iterrows():
+            if row.get("match_points", 0) > 0:
+                current += 1
+                if current > best:
+                    best = current
+            else:
+                current = 0
+        streak_data.append({"email": email, "week": week, "best_streak": best})
+    streak_df = pd.DataFrame(streak_data)
+    weekly = weekly.merge(streak_df, on=["email", "week"], how="left") if not streak_df.empty else weekly
+    if "best_streak" not in weekly.columns:
+        weekly["best_streak"] = 0
+
     winners_by_week = {}
     for week, sub in weekly.groupby("week"):
-        top = sub["match_points"].max()
-        winners = sub[sub["match_points"] == top].sort_values("name")
+        top_points = sub["match_points"].max()
+        contenders = sub[sub["match_points"] == top_points]
+        best_streak = contenders["best_streak"].max()
+        winners = contenders[contenders["best_streak"] == best_streak].sort_values("name")
         winners_by_week[week] = winners.reset_index(drop=True)
 
-    # Total per week per user (for display)
-    weekly_totals = weekly.sort_values(["week", "match_points"], ascending=[True, False])
+    weekly_totals = weekly.sort_values(["week", "match_points", "best_streak"], ascending=[True, False, False])
     return weekly_totals, winners_by_week

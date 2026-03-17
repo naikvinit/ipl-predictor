@@ -7,7 +7,7 @@ Streamlit app for running an IPL prediction challenge: upload fixtures, collect 
 - Secure sign-in via name + email, stored in the database
 - Match-by-match predictions with season-wide meta picks (playoffs, finalists, champion)
 - Admin tools for uploading fixtures/results data
-- Automated scoring logic, read-only public schedule page, and weekly winner summaries
+- Automated scoring logic, read-only public schedule page, weekly winner summaries, and a public team-squads browser
 - Supabase/Postgres backend by default (via `utils/db_pg.py`) with an optional lightweight SQLite fallback (`utils/db.py`)
 
 ## Repository Layout
@@ -63,7 +63,7 @@ For Supabase/Postgres:
 2. Add `DB_URL="postgresql://user:pass@host:5432/db"` to `.streamlit/secrets.toml` locally and to Streamlit Cloud secrets in production.
 3. Ensure the tables exist (run `db.init_db()` once or execute the SQL in `utils/db_pg.py`).
 
-For SQLite fallback, simply swap the imports and the app will recreate `ipl.db` automatically (make sure the file is writable in your environment).
+For SQLite fallback, simply swap the imports and the app will recreate `ipl.db` automatically (make sure the file is writable in your environment). The file lives at the repo root (e.g., `/app/<repo>/ipl.db` on Streamlit Cloud) and is **not** committed to Git—download or copy it manually if you need backups.
 
 ## Populating Data
 
@@ -73,6 +73,17 @@ For SQLite fallback, simply swap the imports and the app will recreate `ipl.db` 
 - Public schedule: `pages/4_Schedule.py` renders the fixture list for everyone (no login required).
 - Team rosters: `pages/5_Team_Squads.py` lists every squad grouped by role (also public).
 - Team logos: place PNG files under `assets/logos/` using the names in `TEAM_LOGOS` inside `utils/ui.py`.
+
+### Backing up SQLite on Streamlit Cloud
+
+If you deploy with the SQLite adapter, open the Admin page and expand **💾 Database Backup** to download the current `ipl.db`. Store the file somewhere safe; restoring is as simple as uploading the file back into the Streamlit workspace (or replacing it locally) before restarting the app. Postgres/Supabase deployments should instead rely on their managed backup tooling.
+
+## Gameplay Notes
+
+- **Points system** (configurable via `POINTS`): 5 pts per correct match winner, 10 per playoff team, 15 per finalist, 20 for champion.
+- **Per-match locking**: The Make Predictions page prevents edits after the global cutoff *and* individually locks matches once their scheduled start time passes, so reopening the cutoff for new fixtures won’t revive older picks.
+- **Weekly tie-breaker**: Weekly Winners ranks by total weekly points, then breaks ties using the longest streak of consecutive correct picks within that week. The page shows both the points and streak data.
+- **Privacy**: Leaderboard and Weekly Winners pages display player names only (emails stay hidden) to avoid leaking login addresses.
 
 ## Configuration
 

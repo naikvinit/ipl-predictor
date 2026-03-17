@@ -13,7 +13,7 @@ import streamlit as st
 from utils import db as db       # (optional) SQLite local
 
 from utils.ui import apply_theme, match_card
-from config import cutoff_dt_utc
+from config import cutoff_dt_utc, POINTS
 
 st.set_page_config(page_title="Make Predictions", page_icon="🏏", layout="wide")
 apply_theme()
@@ -106,6 +106,10 @@ def _fixture_has_started(fixture: dict, now_utc: datetime) -> bool:
 
 def main():
     st.title("🏏 Make Predictions")
+    st.caption(
+        f"Scoring: {POINTS['match_winner']} pts/match winner • {POINTS['playoff_team']} per playoff team • "
+        f"{POINTS['finalist']} per finalist • {POINTS['champion']} for champion"
+    )
 
     if "email" not in st.session_state:
         st.warning("Please sign in on the Home page first.")
@@ -170,12 +174,16 @@ def main():
                 disabled=is_locked,
             )
         with c3:
-            champion = st.selectbox(
-                "Pick the champion",
-                options=[""] + teams,
-                index=([""] + teams).index(existing_champion) if existing_champion in (teams or []) else 0,
-                disabled=is_locked,
-            )
+                champion_index = None
+                if existing_champion and existing_champion in (teams or []):
+                    champion_index = teams.index(existing_champion)
+                champion = st.selectbox(
+                    "Pick the champion",
+                    options=teams,
+                    index=champion_index,
+                    placeholder="Please select",
+                    disabled=is_locked,
+                )
 
     st.divider()
     st.markdown("### 🗓️ Match-by-Match Winners")
@@ -201,7 +209,7 @@ def main():
         return
 
     if st.button("💾 Save Predictions", type="primary", use_container_width=True):
-        if champion == "":
+        if not champion:
             st.error("Please select a champion.")
             st.stop()
         if len(playoffs) != 4:

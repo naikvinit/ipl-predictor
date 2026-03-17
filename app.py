@@ -75,15 +75,16 @@ def main():
         sign_in(authorized_users)
         st.markdown(
             """
-            <div class="section-card" style="margin-top:1rem;">
-              <h3 style="margin-top:0;">How it works</h3>
-              <ol>
-                <li>Contact the league admin to get your email added to the roster.</li>
-                <li>Sign in with that email to unlock predictions and leaderboards.</li>
-                <li>Submit weekly winners before the cutoff and track your progress.</li>
-              </ol>
-              <p class="muted">Need access? Contact Vinit Naik to join.</p>
-            </div>
+                        <div class="section-card" style="margin-top:1rem;">
+                            <h3 style="margin-top:0;">How it works</h3>
+                            <ol>
+                                <li>Contact the league admin to get your email added to the roster.</li>
+                                <li>Sign in with that email to unlock predictions and leaderboards.</li>
+                                <li>Browse the public <b>📅 Schedule</b> and <b>👥 Team Squads</b> pages to study matchups before you pick.</li>
+                                <li>Submit weekly winners before the cutoff and track your progress.</li>
+                            </ol>
+                            <p class="muted">Need access? Contact Vinit Naik to join.</p>
+                        </div>
             """,
             unsafe_allow_html=True
         )
@@ -106,12 +107,13 @@ def main():
         """
         <div class="section-card">
           <b>Next steps</b>
-          <ul>
-            <li>    Go to <b>🏏 Make Predictions</b> to submit all your picks before the cutoff.</li>
-            <li>    Check <b>📊 Leaderboard</b> for season standings.</li>
-            <li>    See <b>🗓️ Weekly Winners</b> to celebrate weekly champs.</li>
-            <li>    Admins: use <b>🛠️ Admin</b> to upload fixtures/results and set season outcomes.</li>
-          </ul>
+                    <ul>
+                        <li>Go to <b>🏏 Make Predictions</b> to submit all your picks before the cutoff.</li>
+                        <li>Study upcoming fixtures on <b>📅 Schedule</b> and the rosters on <b>👥 Team Squads</b> to inform your choices.</li>
+                        <li>Check <b>📊 Leaderboard</b> for season standings.</li>
+                        <li>See <b>🗓️ Weekly Winners</b> to celebrate weekly champs.</li>
+                        <li>Admins: use <b>🛠️ Admin</b> to upload fixtures/results and set season outcomes.</li>
+                    </ul>
           <p class="muted" style="margin-top:1rem;">Invite friends by sharing this app and asking the admin to add their email to the roster.</p>
         </div>
         """, unsafe_allow_html=True
