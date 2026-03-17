@@ -36,6 +36,9 @@ def main():
                 st.write("_No completed matches in this week yet._")
                 continue
 
+            if "best_streak" not in winners.columns:
+                winners = winners.assign(best_streak=0)
+
             names = ", ".join(winners["name"].tolist())
             score = int(winners["match_points"].max())
             streak = int(winners["best_streak"].max())
@@ -56,7 +59,10 @@ def main():
             )
 
             # Full table for that week (no emails)
-            sub = weekly_totals[weekly_totals["week"] == w][["name", "match_points", "best_streak"]]
+            sub = weekly_totals[weekly_totals["week"] == w]
+            if "best_streak" not in sub.columns:
+                sub = sub.assign(best_streak=0)
+            sub = sub[["name", "match_points", "best_streak"]]
             st.dataframe(
                 sub.rename(columns={"match_points": "Points", "best_streak": "Best streak"}),
                 use_container_width=True,
