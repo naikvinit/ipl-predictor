@@ -1,11 +1,11 @@
-# pages/5_🛠️_Admin.py
+# pages/6_🛠️_Admin.py
 import io, csv, os
 from pathlib import Path
 import streamlit as st
 import pandas as pd
 
-from utils import db_pg as db      # Supabase
-#from utils import db as db       # (optional) SQLite local
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local
 from utils.ui import apply_theme
 from utils.auth import refresh_authorized_users
 from config import ADMIN_CODE, CUTOFF_ISO, DEFAULT_CUTOFF_KEY, _parse_cutoff_iso

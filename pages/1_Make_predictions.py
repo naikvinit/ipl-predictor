@@ -1,9 +1,16 @@
 # pages/1_🏏_Make_Predictions.py
 import json
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
+try:
+    from zoneinfo import ZoneInfo
+except ImportError:  # Python < 3.9 environments without tzdata
+    ZoneInfo = None
+
 import streamlit as st
-from utils import db_pg as db      # Supabase
-#from utils import db as db       # (optional) SQLite local
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local
 
 from utils.ui import apply_theme, match_card
 from config import cutoff_dt_utc
@@ -11,9 +18,91 @@ from config import cutoff_dt_utc
 st.set_page_config(page_title="Make Predictions", page_icon="🏏", layout="wide")
 apply_theme()
 
-def locked():
-    now_utc = datetime.now(timezone.utc)
+IST_ZONE = None
+if ZoneInfo is not None:
+    try:
+        IST_ZONE = ZoneInfo("Asia/Kolkata")
+    except Exception:
+        IST_ZONE = None
+if IST_ZONE is None:
+    IST_ZONE = timezone(timedelta(hours=5, minutes=30))
+
+
+def locked(now_utc: Optional[datetime] = None) -> bool:
+    if now_utc is None:
+        now_utc = datetime.now(timezone.utc)
     return now_utc >= cutoff_dt_utc(db_client=db)
+
+
+def _parse_time_component(value: Optional[str]):
+    if not value:
+        return None
+    sanitized = str(value).strip().upper().replace("IST", "").strip()
+    if sanitized.endswith("AM") or sanitized.endswith("PM"):
+        suffix = sanitized[-2:]
+        prefix = sanitized[:-2].strip()
+        sanitized = f"{prefix} {suffix}"
+    time_formats = ("%H:%M", "%I:%M %p", "%I %p")
+    for fmt in time_formats:
+        try:
+            return datetime.strptime(sanitized, fmt).time()
+        except ValueError:
+            continue
+    return None
+
+
+def _parse_date_component(value: str):
+    sanitized = str(value).strip()
+    date_formats = (
+        "%Y-%m-%d",
+        "%Y/%m/%d",
+        "%d-%b-%Y",
+        "%d-%b-%y",
+        "%d %b %Y",
+        "%d %b %y",
+    )
+    for fmt in date_formats:
+        try:
+            return datetime.strptime(sanitized, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def _fixture_datetime_utc(fixture: dict) -> Optional[datetime]:
+    raw_date = fixture.get("match_date")
+    if not raw_date:
+        return None
+    as_str = str(raw_date).strip()
+    try:
+        dt = datetime.fromisoformat(as_str)
+        if dt.tzinfo is None:
+            time_component = _parse_time_component(fixture.get("time_ist"))
+            if time_component is not None:
+                dt = dt.replace(
+                    hour=time_component.hour,
+                    minute=time_component.minute,
+                    second=time_component.second,
+                    microsecond=0,
+                )
+            dt = dt.replace(tzinfo=IST_ZONE)
+        return dt.astimezone(timezone.utc)
+    except ValueError:
+        pass
+
+    parsed_date = _parse_date_component(as_str)
+    if not parsed_date:
+        return None
+    time_component = _parse_time_component(fixture.get("time_ist")) or datetime.min.time()
+    dt = datetime.combine(parsed_date, time_component).replace(tzinfo=IST_ZONE)
+    return dt.astimezone(timezone.utc)
+
+
+def _fixture_has_started(fixture: dict, now_utc: datetime) -> bool:
+    match_dt = _fixture_datetime_utc(fixture)
+    if match_dt is None:
+        return False
+    return now_utc >= match_dt
 
 def main():
     st.title("🏏 Make Predictions")
@@ -22,7 +111,8 @@ def main():
         st.warning("Please sign in on the Home page first.")
         st.stop()
 
-    is_locked = locked()
+    now_utc = datetime.now(timezone.utc)
+    is_locked = locked(now_utc)
     if is_locked:
         st.info("Predictions are locked. Showing your submitted picks for reference.")
 
@@ -45,6 +135,19 @@ def main():
 
     # Teams list for meta
     teams = db.list_teams()
+
+    # Compute per-match lock state (global cutoff OR match already started)
+    fixture_lock_state = {}
+    any_started = False
+    for f in fixtures:
+        match_id = str(f.get("match_id"))
+        started = _fixture_has_started(f, now_utc)
+        if started:
+            any_started = True
+        fixture_lock_state[match_id] = is_locked or started
+
+    if not is_locked and any_started:
+        st.info("Matches that have already started are read-only even if the overall deadline moves.")
 
     # Meta predictions section
     with st.container():
@@ -90,7 +193,7 @@ def main():
                 pick = match_card(
                     fixture=f,
                     existing_pick=match_picks.get(str(f["match_id"]), None),
-                    disabled=is_locked,
+                    disabled=fixture_lock_state.get(str(f["match_id"]), is_locked),
                 )
 
     if is_locked:
@@ -115,7 +218,8 @@ def main():
         missing_matches = [
             f["match_id"]
             for f in fixtures
-            if st.session_state.get(f"pred_{f['match_id']}") not in (f["team_a"], f["team_b"])
+            if not fixture_lock_state.get(str(f["match_id"]), False)
+            and st.session_state.get(f"pred_{f['match_id']}") not in (f["team_a"], f["team_b"])
         ]
 
         if missing_matches:
@@ -127,9 +231,13 @@ def main():
 
         # Save match picks
         for f in fixtures:
+            match_id = str(f["match_id"])
+            if fixture_lock_state.get(match_id, False):
+                continue
             key = f"pred_{f['match_id']}"
             sel = st.session_state.get(key)
-            db.save_match_prediction(st.session_state["email"], f["match_id"], sel)
+            if sel in (f["team_a"], f["team_b"]):
+                db.save_match_prediction(st.session_state["email"], f["match_id"], sel)
 
         st.success("Saved! You can modify until the cutoff.")
 

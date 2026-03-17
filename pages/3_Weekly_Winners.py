@@ -2,8 +2,8 @@
 import streamlit as st
 from utils.ui import apply_theme
 from utils.scoring import weekly_winners
-from utils import db_pg as db      # Supabase
-#from utils import db as db       # (optional) SQLite local
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local
 
 st.set_page_config(page_title="Weekly Winners", page_icon="🗓️", layout="wide")
 apply_theme()

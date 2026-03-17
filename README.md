@@ -67,10 +67,11 @@ For SQLite fallback, simply swap the imports and the app will recreate `ipl.db` 
 
 ## Populating Data
 
-- Fixtures: edit `data/fixtures_template.csv` (columns: match_id, match_date/date, team_a, team_b, week, time_ist, venue, optional day), then use the Admin page (`pages/5_Admin.py`) to upload.
+- Fixtures: edit `data/fixtures_template.csv` (columns: match_id, match_date/date, team_a, team_b, week, time_ist, venue, optional day), then use the Admin page (`pages/6_Admin.py`) to upload.
 - Results: update `data/results_template.csv` and upload once real outcomes exist.
 - Authorized players: maintain `data/authorized_users.csv` via the Admin → **Manage Authorized Players** section (upload a CSV or edit inline).
 - Public schedule: `pages/4_Schedule.py` renders the fixture list for everyone (no login required).
+- Team rosters: `pages/5_Team_Squads.py` lists every squad grouped by role (also public).
 - Team logos: place PNG files under `assets/logos/` using the names in `TEAM_LOGOS` inside `utils/ui.py`.
 
 ## Configuration

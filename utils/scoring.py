@@ -3,8 +3,8 @@ from contextlib import contextmanager
 from typing import Dict, List, Tuple
 import pandas as pd
 
-from utils import db_pg as db      # Supabase
-#from utils import db as db       # (optional) SQLite local
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local
 from config import POINTS
 
 

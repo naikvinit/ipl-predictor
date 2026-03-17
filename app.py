@@ -1,7 +1,7 @@
 # app.py
 import streamlit as st
-from utils import db_pg as db      # Supabase
-#from utils import db as db       # (optional) SQLite local dev
+#from utils import db_pg as db      # Supabase
+from utils import db as db       # (optional) SQLite local dev
 from utils.ui import apply_theme
 from utils.auth import load_authorized_users
 
