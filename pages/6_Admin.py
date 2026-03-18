@@ -4,8 +4,8 @@ from pathlib import Path
 import streamlit as st
 import pandas as pd
 
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local
 from utils.ui import apply_theme
 from utils.auth import refresh_authorized_users
 from config import ADMIN_CODE, CUTOFF_ISO, DEFAULT_CUTOFF_KEY, _parse_cutoff_iso
@@ -225,9 +225,9 @@ def deadline_ui():
 
         st.info(f"Current cutoff: {current_display}")
         new_value = st.text_input(
-            "New cutoff (ISO 8601, e.g., 2026-03-20T18:00:00+05:30)",
+            "New cutoff (ISO 8601, e.g., 2026-03-20T18:00:00+02:00 for CET)",
             value=current_value,
-            help="Use full ISO timestamp including timezone offset so the system can convert to UTC.",
+            help="Use full ISO timestamp including timezone offset (CET = +02:00 during summer, +01:00 during winter) so the system can convert to UTC.",
         )
 
         if st.button("Save new cutoff", type="primary", key="save_cutoff_btn"):

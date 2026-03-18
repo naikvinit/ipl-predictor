@@ -2,8 +2,8 @@
 import streamlit as st
 import pandas as pd
 
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local
 from utils.ui import apply_theme
 
 st.set_page_config(page_title="Schedule", page_icon="📅", layout="wide")

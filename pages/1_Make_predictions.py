@@ -9,8 +9,8 @@ except ImportError:  # Python < 3.9 environments without tzdata
     ZoneInfo = None
 
 import streamlit as st
-#from utils import db_pg as db      # Supabase
-from utils import db as db       # (optional) SQLite local
+from utils import db_pg as db      # Supabase
+#from utils import db as db       # (optional) SQLite local
 
 from utils.ui import apply_theme, match_card
 from config import cutoff_dt_utc, POINTS
@@ -120,7 +120,11 @@ def main():
     if is_locked:
         st.info("Predictions are locked. Showing your submitted picks for reference.")
 
-    fixtures = db.list_fixtures()
+    @st.cache_data(show_spinner=False)
+    def _cached_fixtures():
+        return db.list_fixtures()
+
+    fixtures = _cached_fixtures()
     if not fixtures:
         st.warning("Fixtures are not yet uploaded. Please check back later.")
         st.stop()

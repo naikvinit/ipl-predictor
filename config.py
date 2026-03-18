@@ -3,8 +3,8 @@ from datetime import datetime, timezone
 from typing import Optional
 
 # --- IMPORTANT: EDIT THESE FOR YOUR SEASON ---
-# Use ISO 8601 with timezone. Example shown is IST (UTC+05:30).
-CUTOFF_ISO = "2026-03-20T18:00:00+05:30"  # When predictions close (pre-IPL)
+# Use ISO 8601 with timezone. Default is CET (UTC+02:00 in summer / +01:00 in winter).
+CUTOFF_ISO = "2026-03-20T18:00:00+02:00"  # When predictions close (pre-IPL)
 ADMIN_CODE = None  # Prefer to set via environment/Secrets. Fallback can be set here (string).
 
 # Scoring system (feel free to tune)
