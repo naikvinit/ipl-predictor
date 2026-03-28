@@ -297,6 +297,28 @@ def save_match_prediction(email: str, match_id: str, predicted_winner: str) -> N
     )
 
 
+def save_match_predictions_bulk(email: str, predictions: Dict[str, str]) -> None:
+    """Save many match predictions for a user in one transaction."""
+    normalized_email = email.strip().lower()
+    rows = [
+        {
+            "email": normalized_email,
+            "match_id": str(match_id),
+            "predicted_winner": predicted_winner,
+        }
+        for match_id, predicted_winner in predictions.items()
+    ]
+    _executemany(
+        """
+        INSERT INTO predictions_match (email, match_id, predicted_winner)
+        VALUES (:email, :match_id, :predicted_winner)
+        ON CONFLICT (email, match_id)
+        DO UPDATE SET predicted_winner = EXCLUDED.predicted_winner;
+        """,
+        rows,
+    )
+
+
 def get_user_match_predictions(email: str) -> Dict[str, str]:
     rows = _fetchall(
         """
