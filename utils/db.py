@@ -207,6 +207,27 @@ def save_match_prediction(email: str, match_id: str, predicted_winner: str):
     conn.commit()
     conn.close()
 
+
+def save_match_predictions_bulk(email: str, predictions: Dict[str, str]):
+    """Save many match predictions for a user in one transaction."""
+    if not predictions:
+        return
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.executemany(
+        """
+        INSERT INTO predictions_match (email, match_id, predicted_winner)
+        VALUES (?, ?, ?)
+        ON CONFLICT(email, match_id) DO UPDATE SET predicted_winner=excluded.predicted_winner;
+        """,
+        [
+            (email.strip().lower(), str(match_id), predicted_winner)
+            for match_id, predicted_winner in predictions.items()
+        ],
+    )
+    conn.commit()
+    conn.close()
+
 def get_user_match_predictions(email: str) -> Dict[str, str]:
     conn = get_conn()
     cur = conn.cursor()

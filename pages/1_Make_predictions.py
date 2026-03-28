@@ -1,6 +1,7 @@
 # pages/1_🏏_Make_Predictions.py
 import json
 from datetime import datetime, timezone, timedelta
+from time import sleep
 from typing import Optional
 
 try:
@@ -241,7 +242,8 @@ def main():
             )
             st.stop()
 
-        # Save match picks
+        # Save match picks in one DB transaction to reduce partial writes on slow connections
+        pending_predictions = {}
         for f in fixtures:
             match_id = str(f["match_id"])
             if fixture_lock_state.get(match_id, False):
@@ -249,9 +251,41 @@ def main():
             key = f"pred_{f['match_id']}"
             sel = st.session_state.get(key)
             if sel in (f["team_a"], f["team_b"]):
-                db.save_match_prediction(st.session_state["email"], f["match_id"], sel)
+                pending_predictions[match_id] = sel
 
-        st.success("Saved! You can modify until the cutoff.")
+        email = st.session_state["email"]
+        remaining_predictions = dict(pending_predictions)
+        missing_after_save = []
+
+        # Save + verify, then retry once for any missing rows (handles transient slow DB/network)
+        for attempt in range(2):
+            db.save_match_predictions_bulk(email, remaining_predictions)
+            saved_predictions = db.get_user_match_predictions(email)
+
+            missing_after_save = [
+                match_id
+                for match_id, picked_winner in remaining_predictions.items()
+                if saved_predictions.get(match_id) != picked_winner
+            ]
+
+            if not missing_after_save:
+                break
+
+            if attempt == 0:
+                sleep(1)
+                remaining_predictions = {
+                    match_id: remaining_predictions[match_id] for match_id in missing_after_save
+                }
+
+        if missing_after_save:
+            st.error(
+                "Some matches could not be confirmed as saved even after an automatic retry. "
+                "Please click Save again. Missing: "
+                + ", ".join(missing_after_save)
+            )
+            st.stop()
+
+        st.success("Saved! All available match predictions were stored.")
 
 if __name__ == "__main__":
     main()

@@ -57,6 +57,9 @@ def match_card(fixture: dict, existing_pick: Optional[str], *, disabled: bool = 
         st.markdown("<div class='match-vs'>VS</div>", unsafe_allow_html=True)
         st.caption(f"Match #{fixture['match_id']}")
         st.caption(format_match_dt(fixture.get("match_date", "")))
+        venue = (fixture.get("venue") or "").strip()
+        if venue:
+            st.caption(f"Ground: {venue}")
 
     with c3:
         if logo2: st.image(logo2, width=48)
